@@ -293,6 +293,7 @@ func AddMediaToQueue(mediaPath string) error {
 	if parentAlbum != nil && parentAlbum.ID == 0 {
 		parentAlbum = nil
 	}
+	// todo: populate the ignore paths
 	/*scanQueue := list.New()
 	scanQueue.PushBack(scanner.ScanInfo{
 		Path:   subalbumPath,

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"gorm.io/datatypes"
 	"time"
 )
 
@@ -20,6 +21,7 @@ type MediaEXIF struct {
 	ExposureProgram *int64
 	GPSLatitude     *float64
 	GPSLongitude    *float64
+	Attributes      datatypes.JSON `gorm:"index"`
 }
 
 func (MediaEXIF) TableName() string {

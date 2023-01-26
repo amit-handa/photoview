@@ -2,6 +2,8 @@ package actions_test
 
 import (
 	"fmt"
+	"log"
+	"regexp"
 	"testing"
 
 	"github.com/photoview/photoview/api/graphql/models"
@@ -9,6 +11,15 @@ import (
 	"github.com/photoview/photoview/api/test_utils"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestAmit(t *testing.T) {
+	query := "a:amit a:divya"
+	regex, _ := regexp.Compile("a:\\S+")
+	matches := regex.FindAllStringIndex(query, -1)
+	for i, m := range matches {
+		log.Printf("%d %d %d\n", i, m[0], m[1])
+	}
+}
 
 func TestSearch(t *testing.T) {
 	db := test_utils.DatabaseTest(t)

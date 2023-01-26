@@ -1,6 +1,8 @@
 package actions
 
 import (
+	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/photoview/photoview/api/database/drivers"
@@ -9,6 +11,27 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+type searchQuery struct {
+	Attributes []string
+	query      string
+}
+
+func parseQuery(query string) searchQuery {
+	regex, _ := regexp.Compile("a:\\S+")
+	matches := regex.FindAllStringIndex(query, -1)
+
+	var attrs []string
+	var queryBuilder strings.Builder
+	var i = 0
+	for _, m := range matches {
+		queryBuilder.WriteString(query[i:m[0]])
+		attrs = append(attrs, query[m[0]+2:m[1]])
+		i = m[1]
+	}
+
+	return searchQuery{Attributes: attrs, query: strings.TrimSpace(queryBuilder.String())}
+}
 
 func Search(db *gorm.DB, query string, userID int, _limitMedia *int, _limitAlbums *int) (*models.SearchResult, error) {
 	limitMedia := 10
@@ -22,6 +45,9 @@ func Search(db *gorm.DB, query string, userID int, _limitMedia *int, _limitAlbum
 		limitAlbums = *_limitAlbums
 	}
 
+	pquery := parseQuery(query)
+	query = pquery.query
+
 	wildQuery := "%" + strings.ToLower(query) + "%"
 
 	var media []*models.Media
@@ -33,7 +59,7 @@ func Search(db *gorm.DB, query string, userID int, _limitMedia *int, _limitAlbum
 		userSubquery = userSubquery.Where("album_id = Album.id")
 	}
 
-	err := db.Joins("Album").
+	q := db.Joins("Album").Joins("Exif").
 		Where("EXISTS (?)", userSubquery).
 		Where("LOWER(media.title) LIKE ? OR LOWER(media.path) LIKE ?", wildQuery, wildQuery).
 		Clauses(clause.OrderBy{
@@ -42,7 +68,13 @@ func Search(db *gorm.DB, query string, userID int, _limitMedia *int, _limitAlbum
 				Vars:               []interface{}{wildQuery, wildQuery},
 				WithoutParentheses: true},
 		}).
-		Limit(limitMedia).Find(&media).Error
+		Limit(limitMedia)
+
+	for _, attr := range pquery.Attributes {
+		q = q.Where("json_contains(Exif.attributes, ?)", fmt.Sprintf("\"%s\"", attr))
+	}
+
+	err := q.Find(&media).Error
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "searching media")

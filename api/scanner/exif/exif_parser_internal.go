@@ -1,10 +1,13 @@
 package exif
 
 import (
+	"encoding/json"
 	"fmt"
+	"gorm.io/datatypes"
 	"log"
 	"math/big"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/photoview/photoview/api/graphql/models"
@@ -144,6 +147,17 @@ func (p internalExifParser) ParseExif(media_path string) (returnExif *models.Med
 	if err == nil {
 		newExif.GPSLatitude = &lat
 		newExif.GPSLongitude = &long
+	}
+
+	// todo: verify if it actually works.
+	attributes, err := p.readStringTag(exifTags, "Subject", media_path)
+	if err == nil {
+		var attributesBytes []byte
+		var err error
+		if attributesBytes, err = json.Marshal(strings.Split(*attributes, ",")); err != nil {
+			return nil, err
+		}
+		newExif.Attributes = datatypes.JSON(attributesBytes)
 	}
 
 	returnExif = &newExif
