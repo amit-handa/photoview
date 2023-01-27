@@ -21,7 +21,8 @@ type MediaEXIF struct {
 	ExposureProgram *int64
 	GPSLatitude     *float64
 	GPSLongitude    *float64
-	Attributes      datatypes.JSON `gorm:"index"`
+	Subjects        []string `gorm:"index:,expression:(CAST(subjects as CHAR(32) ARRAY));type:varchar(250) GENERATED ALWAYS AS (metadata->'$.subjects') STORED"`
+	Metadata        datatypes.JSONMap
 }
 
 func (MediaEXIF) TableName() string {

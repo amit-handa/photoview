@@ -1,7 +1,6 @@
 package exif
 
 import (
-	"encoding/json"
 	"gorm.io/datatypes"
 	"log"
 	"math"
@@ -190,15 +189,12 @@ func (p *externalExifParser) ParseExif(media_path string) (returnExif *models.Me
 	}
 
 	// get exif subject attribute
-	attributes, err := fileInfo.GetStrings("Subject")
+	subjects, err := fileInfo.GetStrings("Subject")
 	if err == nil {
 		found_exif = true
-		var attributesBytes []byte
-		var err error
-		if attributesBytes, err = json.Marshal(attributes); err != nil {
-			return nil, err
-		}
-		newExif.Attributes = datatypes.JSON(attributesBytes)
+		newExif.Metadata = datatypes.JSONMap(map[string]interface{}{
+			"subjects": subjects,
+		})
 	}
 
 	if !found_exif {
